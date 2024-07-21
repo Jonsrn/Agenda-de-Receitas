@@ -7,6 +7,8 @@ from PyQt5.QtGui import QPixmap, QFont
 from PyQt5.QtCore import Qt
 from db import db, fs
 from models import Receita
+import gridfs 
+import os
 
 
 class MainWindow(QMainWindow):
@@ -14,10 +16,11 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.setWindowTitle("Aplicação de Receitas")
         self.setGeometry(100, 100, 1200, 800)
+        
 
         self.stacked_widget = QStackedWidget()
         self.setCentralWidget(self.stacked_widget)
-
+        
         self.initUI()
 
     def initUI(self):
@@ -307,12 +310,9 @@ class MainWindow(QMainWindow):
         self.modo_preparo_edit.setFont(QFont("Arial", 12))
         self.modo_preparo_edit.setMinimumHeight(200)  # Altura mínima para a caixa de texto
 
-        # Botões de seleção de imagem e bandeira
+        # Botão de seleção de imagem da receita
         select_image_button = QPushButton("Selecionar Imagem da Receita")
         select_image_button.clicked.connect(self.select_image)
-
-        select_bandeira_button = QPushButton("Selecionar Imagem da Bandeira")
-        select_bandeira_button.clicked.connect(self.select_bandeira)
 
         submit_button = QPushButton("Salvar Receita")
         submit_button.clicked.connect(self.save_recipe)
@@ -322,7 +322,6 @@ class MainWindow(QMainWindow):
         layout.addWidget(QLabel("Modo de Preparo:"))
         layout.addWidget(self.modo_preparo_edit)
         layout.addWidget(select_image_button)
-        layout.addWidget(select_bandeira_button)
         layout.addWidget(submit_button)
 
         # Ajustando o layout para expandir a caixa de texto horizontalmente
@@ -338,11 +337,6 @@ class MainWindow(QMainWindow):
         if file_name:
             self.imagem_path = file_name
 
-    def select_bandeira(self):
-        options = QFileDialog.Options()
-        file_name, _ = QFileDialog.getOpenFileName(self, "Selecionar Imagem da Bandeira", "", "Images (*.png *.jpg *.jpeg)", options=options)
-        if file_name:
-            self.bandeira_path = file_name
 
     def save_recipe(self):
         nome_popular = self.nome_popular_edit.text()
@@ -350,8 +344,23 @@ class MainWindow(QMainWindow):
         categoria = self.categoria_combo.currentText()
         tipo_prato = self.tipo_prato_combo.currentText()
         origem = self.origem_combo.currentText()
+
+        # Mapeamento de países para códigos
+        country_codes = {
+            "Brasil": 1,
+            "Estados Unidos": 2,
+            "França": 3,
+            "Alemanha": 4,
+            "Itália": 5,
+            "Japão": 6,
+            "México": 7,
+            "Espanha": 8,
+            "Reino Unido": 9
+        }
+        origem_code = country_codes.get(origem, 0)  # 0 como default para países não listados
+
         tempo_preparo = self.tempo_preparo_spin.value()
-        modo_preparo = self.modo_preparo_edit.text()
+        modo_preparo = self.modo_preparo_edit.toPlainText()
 
         ingredientes = []
         for i in range(self.ingredientes_layout.count()):
@@ -367,26 +376,22 @@ class MainWindow(QMainWindow):
             with open(self.imagem_path, "rb") as image_file:
                 imagem_id = fs.put(image_file, filename=self.imagem_path.split('/')[-1])
 
-        bandeira_id = None
-        if self.bandeira_path:
-            with open(self.bandeira_path, "rb") as bandeira_file:
-                bandeira_id = fs.put(bandeira_file, filename=self.bandeira_path.split('/')[-1])
+        db.receitas.insert_one({
+            "nome_popular": nome_popular,
+            "tipo": tipo,
+            "categoria": categoria,
+            "tipo_prato": tipo_prato,
+            "origem_code": origem_code,  # Salvando o código numérico
+            "tempo_preparo": tempo_preparo,
+            "ingredientes": ingredientes,
+            "modo_preparo": modo_preparo,
+            "imagem_id": imagem_id
+        })
 
-        receita = Receita(
-            nome_popular=nome_popular,
-            tipo=tipo,
-            categoria=categoria,
-            tipo_prato=tipo_prato,
-            origem=origem,
-            tempo_preparo=tempo_preparo,
-            ingredientes=ingredientes,
-            modo_preparo=modo_preparo,
-            imagem_id=imagem_id,
-            bandeira_origem_id=bandeira_id
-        )
+        QMessageBox.information(self, "Salvo", "Receita salva com sucesso!")
+        self.stacked_widget.setCurrentIndex(0)
 
-        db.receitas.insert_one(receita.to_dict())
-        self.stacked_widget.setCurrentIndex(0)  # Voltar para a tela inicial após salvar
+
 
     def query_screen(self):
         query_widget = QWidget()
@@ -464,35 +469,48 @@ class MainWindow(QMainWindow):
             details_widget = QWidget()
             main_layout = QVBoxLayout(details_widget)
             top_layout = QHBoxLayout()
-            bottom_layout = QGridLayout()
+            bottom_layout = QVBoxLayout()  # Usando um layout vertical para simplificar
 
-            # Image
-            image_label = QLabel()
+            # Configuração da imagem
+            image_label = QLabel("Imagem não Disponível")
+            image_label.setAlignment(Qt.AlignCenter)
+            image_label.setStyleSheet("background-color: gray; font-size: 16px;")
+            image_label.setFixedSize(400, 400)
             if recipe.get("imagem_id"):
-                pixmap = QPixmap()
-                pixmap.loadFromData(fs.get(recipe["imagem_id"]).read())
-                image_label.setPixmap(pixmap.scaled(400, 400, Qt.KeepAspectRatio))
-            else:
-                image_label.setText("Imagem não Disponível")
-                image_label.setAlignment(Qt.AlignCenter)
-                image_label.setStyleSheet("background-color: gray; font-size: 16px;")
-                image_label.setFixedSize(400, 400)
+                try:
+                    pixmap = QPixmap()
+                    pixmap.loadFromData(fs.get(recipe["imagem_id"]).read())
+                    image_label.setPixmap(pixmap.scaled(400, 400, Qt.KeepAspectRatio))
+                except gridfs.errors.NoFile:
+                    QMessageBox.warning(self, "Erro", "Imagem da receita não encontrada no banco de dados.")
 
-            # Title
+            # Configuração do título
             title_label = QLabel(recipe["nome_popular"])
             title_label.setFont(QFont("Georgia", 24, QFont.Bold))
             title_label.setAlignment(Qt.AlignCenter)
 
-            # Flag
+            # Caminho base para as bandeiras
+            base_path = os.path.join(os.path.dirname(__file__), 'bandeiras')
+            country_codes_to_filenames = {
+                1: os.path.join(base_path, "Bandeira_Brasil.png"),
+                2: os.path.join(base_path, "bandeira_USA.png"),
+                3: os.path.join(base_path, "Bandeira_Franca.jpg"),
+                4: os.path.join(base_path, "Bandeira_Alemanha.png"), 
+                5: os.path.join(base_path, "Bandeira_Italia.png"), 
+                6: os.path.join(base_path, "bandeira_Japao.png"), 
+                7: os.path.join(base_path, "Bandeira_Mexico.png"), 
+                8: os.path.join(base_path, "Bandeira_Espanha.png"), 
+                9: os.path.join(base_path, "Bandeira_Inglaterra.jpg")
+            }
+
+            bandeira_filename = country_codes_to_filenames.get(recipe.get("origem_code"), os.path.join(base_path, "default_flag.png"))
+            flag_pixmap = QPixmap(bandeira_filename)
+
+            # Configuração da bandeira
             flag_label = QLabel()
-            if recipe.get("bandeira_origem_id"):
-                flag_pixmap = QPixmap()
-                flag_pixmap.loadFromData(fs.get(recipe["bandeira_origem_id"]).read())
-                flag_label.setPixmap(flag_pixmap.scaled(50, 50, Qt.KeepAspectRatio))
-            else:
-                flag_label.setText("Bandeira não disponível")
-                flag_label.setAlignment(Qt.AlignRight)
-                flag_label.setStyleSheet("font-size: 12px;")
+            flag_label.setPixmap(flag_pixmap.scaled(50, 50, Qt.KeepAspectRatio))
+            flag_label.setAlignment(Qt.AlignRight)
+            flag_label.setStyleSheet("font-size: 12px;")
 
             top_layout.addWidget(image_label)
             top_layout.addSpacing(20)
@@ -500,7 +518,7 @@ class MainWindow(QMainWindow):
             top_layout.addWidget(flag_label)
             top_layout.setAlignment(flag_label, Qt.AlignTop | Qt.AlignRight)
 
-            # Ingredients and Preparation
+            # Configuração dos ingredientes e modo de preparo
             ingredients_label = QLabel("Ingredientes:")
             ingredients_label.setFont(QFont("Arial", 18))
             ingredients_text = QLabel("\n".join([f"{ing['quantidade']} {ing['unidade']} de {ing['nome']}" for ing in recipe["ingredientes"]]))
@@ -513,16 +531,16 @@ class MainWindow(QMainWindow):
             preparation_text.setFont(QFont("Arial", 14))
             preparation_text.setWordWrap(True)
 
-            # Grid layout for text alignment
-            bottom_layout.addWidget(ingredients_label, 0, 0)
-            bottom_layout.addWidget(ingredients_text, 1, 0)
-            bottom_layout.addWidget(preparation_label, 0, 1)
-            bottom_layout.addWidget(preparation_text, 1, 1)
-            bottom_layout.setColumnStretch(1, 2)
+            bottom_layout.addWidget(ingredients_label)
+            bottom_layout.addWidget(ingredients_text)
+            bottom_layout.addWidget(preparation_label)
+            bottom_layout.addWidget(preparation_text)
 
             main_layout.addLayout(top_layout)
             main_layout.addLayout(bottom_layout)
 
+            details_widget.setLayout(main_layout)
             self.stacked_widget.addWidget(details_widget)
             self.stacked_widget.setCurrentWidget(details_widget)
-            self.add_back_button(main_layout, 4)
+            self.add_back_button(main_layout, 4)  # Adicionando um botão de volta
+
