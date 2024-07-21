@@ -17,7 +17,8 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("Aplicação de Receitas")
         self.setGeometry(100, 100, 1200, 800)
         
-
+        
+        self.imagem_path = None
         self.stacked_widget = QStackedWidget()
         self.setCentralWidget(self.stacked_widget)
         
@@ -227,6 +228,7 @@ class MainWindow(QMainWindow):
         insert_step1_widget = QWidget()
         layout = QVBoxLayout()
 
+        # Configurações dos QComboBox
         self.tipo_combo = QComboBox()
         self.tipo_combo.addItems(["Líquido", "Sólido"])
         self.categoria_combo = QComboBox()
@@ -234,16 +236,27 @@ class MainWindow(QMainWindow):
         self.tipo_prato_combo = QComboBox()
         self.tipo_prato_combo.addItems(["Prato principal", "Aperitivo", "Sobremesa"])
 
+        # Configuração dos QLabel
+        tipo_label = QLabel("Tipo:")
+        tipo_label.setFont(QFont('Arial', 14))  # Aumentando a fonte
+        categoria_label = QLabel("Categoria:")
+        categoria_label.setFont(QFont('Arial', 14))  # Aumentando a fonte
+        tipo_prato_label = QLabel("Tipo de Prato:")
+        tipo_prato_label.setFont(QFont('Arial', 14))  # Aumentando a fonte
+        origem_label = QLabel("País de Origem:")
+        origem_label.setFont(QFont('Arial', 14))  # Aumentando a fonte
+
         self.origem_combo = QComboBox()
         self.populate_country_combobox(self.origem_combo)
 
-        layout.addWidget(QLabel("Tipo:"))
+        # Adicionando elementos ao layout
+        layout.addWidget(tipo_label)
         layout.addWidget(self.tipo_combo)
-        layout.addWidget(QLabel("Categoria:"))
+        layout.addWidget(categoria_label)
         layout.addWidget(self.categoria_combo)
-        layout.addWidget(QLabel("Tipo de Prato:"))
+        layout.addWidget(tipo_prato_label)
         layout.addWidget(self.tipo_prato_combo)
-        layout.addWidget(QLabel("País de Origem:"))
+        layout.addWidget(origem_label)
         layout.addWidget(self.origem_combo)
 
         next_button = QPushButton("Próximo")
@@ -262,15 +275,23 @@ class MainWindow(QMainWindow):
         self.tempo_preparo_spin = QSpinBox()
         self.tempo_preparo_spin.setMaximum(1440)
 
+        # Configuração dos QLabel
+        nome_popular_label = QLabel("Nome Popular:")
+        nome_popular_label.setFont(QFont('Arial', 14))  # Aumentando a fonte
+        tempo_preparo_label = QLabel("Tempo de Preparo (minutos):")
+        tempo_preparo_label.setFont(QFont('Arial', 14))  # Aumentando a fonte
+        ingredientes_label = QLabel("Ingredientes:")
+        ingredientes_label.setFont(QFont('Arial', 14))  # Aumentando a fonte
+
         self.ingredientes_layout = QVBoxLayout()
         add_ingrediente_button = QPushButton("+ Adicionar Ingrediente")
         add_ingrediente_button.clicked.connect(self.add_ingrediente_field)
 
-        layout.addWidget(QLabel("Nome Popular:"))
+        layout.addWidget(nome_popular_label)
         layout.addWidget(self.nome_popular_edit)
-        layout.addWidget(QLabel("Tempo de Preparo (minutos):"))
+        layout.addWidget(tempo_preparo_label)
         layout.addWidget(self.tempo_preparo_spin)
-        layout.addWidget(QLabel("Ingredientes:"))
+        layout.addWidget(ingredientes_label)
         layout.addLayout(self.ingredientes_layout)
         layout.addWidget(add_ingrediente_button)
 
@@ -281,6 +302,7 @@ class MainWindow(QMainWindow):
 
         self.stacked_widget.addWidget(insert_step2_widget)
         self.add_back_button(layout, 1)
+
 
     def add_ingrediente_field(self):
         ingrediente_widget = QWidget()
@@ -378,7 +400,7 @@ class MainWindow(QMainWindow):
                 ingredientes.append({"nome": nome, "quantidade": quantidade, "unidade": unidade})
 
         imagem_id = None
-        if self.imagem_path:
+        if self.imagem_path:  # Checagem se um caminho de imagem foi fornecido
             with open(self.imagem_path, "rb") as image_file:
                 imagem_id = fs.put(image_file, filename=self.imagem_path.split('/')[-1])
 
