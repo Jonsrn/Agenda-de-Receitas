@@ -1,11 +1,13 @@
 from PyQt5.QtWidgets import (
-    QMainWindow, QWidget, QVBoxLayout, QStackedWidget, QPushButton, QLabel, 
+    QApplication, QMainWindow, QWidget, QVBoxLayout, QStackedWidget, QPushButton, QLabel, 
     QComboBox, QLineEdit, QDialog, QFileDialog, QListWidget, QListWidgetItem, 
-    QFormLayout, QSpinBox, QHBoxLayout
+    QFormLayout, QSpinBox, QHBoxLayout, QGridLayout, QFrame
 )
-from PyQt5.QtGui import QPixmap
+from PyQt5.QtGui import QPixmap, QFont
+from PyQt5.QtCore import Qt
 from db import db, fs
 from models import Receita
+
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -209,6 +211,7 @@ class MainWindow(QMainWindow):
         self.populate_country_combobox(self.query_origem_combo, include_empty=True)
 
         self.query_result_list = QListWidget()
+        self.query_result_list.itemClicked.connect(self.display_recipe_details)
 
         search_button = QPushButton("Buscar")
         search_button.clicked.connect(self.perform_query)
@@ -258,3 +261,56 @@ class MainWindow(QMainWindow):
         for result in results:
             item = QListWidgetItem(result["nome_popular"])
             self.query_result_list.addItem(item)
+
+    def display_recipe_details(self, item):
+        recipe_name = item.text()
+        recipe = db.receitas.find_one({"nome_popular": recipe_name})
+
+        if recipe:
+            details_widget = QWidget()
+            layout = QVBoxLayout(details_widget)
+
+            image_label = QLabel()
+            if recipe.get("imagem_id"):
+                pixmap = QPixmap()
+                pixmap.loadFromData(fs.get(recipe["imagem_id"]).read())
+                image_label.setPixmap(pixmap.scaled(200, 200, Qt.KeepAspectRatio))
+            else:
+                image_label.setText("Imagem não Disponível")
+                image_label.setAlignment(Qt.AlignCenter)
+                image_label.setStyleSheet("background-color: gray; font-size: 16px;")
+
+            title_label = QLabel(recipe["nome_popular"])
+            title_label.setFont(QFont("Arial", 18, QFont.Bold))
+
+            info_layout = QHBoxLayout()
+
+            # Left column for ingredients and time
+            left_column = QVBoxLayout()
+            ingredients_label = QLabel("Ingredientes:")
+            ingredients_text = "\n".join([f"{ing['quantidade']} {ing['unidade']} de {ing['nome']}" for ing in recipe["ingredientes"]])
+            ingredients_info = QLabel(ingredients_text)
+            ingredients_info.setWordWrap(True)
+
+            left_column.addWidget(ingredients_label)
+            left_column.addWidget(ingredients_info)
+            left_column.addWidget(QLabel(f"Tempo de Preparo: {recipe['tempo_preparo']} minutos"))
+
+            # Right column for preparation steps
+            right_column = QVBoxLayout()
+            preparation_label = QLabel("Modo de Preparo:")
+            preparation_text = QLabel(recipe["modo_preparo"])
+            preparation_text.setWordWrap(True)
+
+            right_column.addWidget(preparation_label)
+            right_column.addWidget(preparation_text)
+
+            info_layout.addLayout(left_column)
+            info_layout.addLayout(right_column)
+
+            layout.addWidget(image_label)
+            layout.addWidget(title_label)
+            layout.addLayout(info_layout)
+
+            self.stacked_widget.addWidget(details_widget)
+            self.stacked_widget.setCurrentWidget(details_widget)
