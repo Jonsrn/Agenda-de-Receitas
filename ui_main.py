@@ -31,15 +31,33 @@ class MainWindow(QMainWindow):
         home_widget = QWidget()
         layout = QVBoxLayout()
 
+        # Caminhos das imagens
+        insert_image_path = 'escrevendo_receita.jpg'  # Atualize com o caminho correto
+        query_image_path = 'consultar.jpg'    # Atualize com o caminho correto
+
+        # Configuração da imagem e botão de inserção
+        insert_image_label = QLabel()
+        insert_image_pixmap = QPixmap(insert_image_path)
+        insert_image_label.setPixmap(insert_image_pixmap.scaled(300, 300, Qt.KeepAspectRatio))
+        insert_image_label.setAlignment(Qt.AlignCenter)  # Centraliza apenas a imagem
         insert_button = QPushButton("Inserir Receita")
         insert_button.clicked.connect(lambda: self.stacked_widget.setCurrentIndex(1))
+
+        # Configuração da imagem e botão de consulta
+        query_image_label = QLabel()
+        query_image_pixmap = QPixmap(query_image_path)
+        query_image_label.setPixmap(query_image_pixmap.scaled(300, 300, Qt.KeepAspectRatio))
+        query_image_label.setAlignment(Qt.AlignCenter)  # Centraliza apenas a imagem
         query_button = QPushButton("Consultar Receita")
         query_button.clicked.connect(lambda: self.stacked_widget.setCurrentIndex(4))
 
+        # Adicionando ao layout principal
+        layout.addWidget(insert_image_label)
         layout.addWidget(insert_button)
+        layout.addWidget(query_image_label)
         layout.addWidget(query_button)
-        home_widget.setLayout(layout)
 
+        home_widget.setLayout(layout)
         self.stacked_widget.addWidget(home_widget)
 
     def insert_screen_step1(self):
