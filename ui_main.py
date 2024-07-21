@@ -40,9 +40,11 @@ class MainWindow(QMainWindow):
         home_widget = QWidget()
         layout = QVBoxLayout()
 
-        # Caminhos das imagens
-        insert_image_path = 'escrevendo_receita.jpg'  # Atualize com o caminho correto
-        query_image_path = 'consultar.jpg'    # Atualize com o caminho correto
+        # Caminhos das imagens 
+        base_path_1 = os.path.join(os.path.dirname(__file__), 'icones')
+
+        insert_image_path = os.path.join(base_path_1,'escrevendo_receita.jpg')  # Atualize com o caminho correto
+        query_image_path = os.path.join(base_path_1,'consultar.jpg')    # Atualize com o caminho correto
 
         # Configuração da imagem e botão de inserção
         insert_image_label = QLabel()
@@ -75,9 +77,10 @@ class MainWindow(QMainWindow):
     def advanced_options_screen(self):
         advanced_widget = QWidget()
         layout = QVBoxLayout()
-
+        
+        base_path_1 = os.path.join(os.path.dirname(__file__), 'icones')
         # Imagem e botão para Editar Receita
-        edit_image_path = 'editar.jpg'  # Atualize com o caminho correto
+        edit_image_path = os.path.join(base_path_1,'editar.jpg')  # Atualize com o caminho correto
         edit_image_label = QLabel()
         edit_image_pixmap = QPixmap(edit_image_path)
         edit_image_label.setPixmap(edit_image_pixmap.scaled(300, 300, Qt.KeepAspectRatio))
@@ -86,7 +89,9 @@ class MainWindow(QMainWindow):
         edit_button.clicked.connect(self.edit_recipe)  # Função para editar receitas
 
         # Imagem e botão para Excluir Receita
-        delete_image_path = 'excluir.jpg'  # Atualize com o caminho correto
+        base_path_1 = os.path.join(os.path.dirname(__file__), 'icones')
+
+        delete_image_path = os.path.join(base_path_1,'excluir.jpg')  # Atualize com o caminho correto
         delete_image_label = QLabel()
         delete_image_pixmap = QPixmap(delete_image_path)
         delete_image_label.setPixmap(delete_image_pixmap.scaled(300, 300, Qt.KeepAspectRatio))
@@ -298,7 +303,8 @@ class MainWindow(QMainWindow):
         layout = QVBoxLayout()
 
         # Configuração da imagem ilustrativa
-        cooking_image_path = 'modo_preparo.jpg'  # Atualize com o caminho correto
+        base_path_1 = os.path.join(os.path.dirname(__file__), 'icones')
+        cooking_image_path = os.path.join(base_path_1,'modo_preparo.jpg')  # Atualize com o caminho correto
         cooking_image_label = QLabel()
         cooking_image_pixmap = QPixmap(cooking_image_path)
         cooking_image_label.setPixmap(cooking_image_pixmap.scaled(600, 400, Qt.KeepAspectRatio))
