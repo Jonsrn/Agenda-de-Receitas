@@ -1,7 +1,7 @@
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QStackedWidget, QPushButton, QLabel, 
     QComboBox, QLineEdit, QDialog, QFileDialog, QListWidget, QListWidgetItem, 
-    QFormLayout, QSpinBox, QHBoxLayout, QGridLayout, QFrame
+    QFormLayout, QSpinBox, QHBoxLayout, QGridLayout, QFrame, QTextEdit, QMessageBox
 )
 from PyQt5.QtGui import QPixmap, QFont
 from PyQt5.QtCore import Qt
@@ -26,21 +26,194 @@ class MainWindow(QMainWindow):
         self.insert_screen_step2()
         self.insert_screen_step3()
         self.query_screen()
+        self.advanced_options_screen()
+
+    def add_back_button(self, layout, index_to_go_back=-1):
+        back_button = QPushButton("Voltar")
+        back_button.clicked.connect(lambda: self.stacked_widget.setCurrentIndex(index_to_go_back if index_to_go_back != -1 else 0))
+        layout.addWidget(back_button)    
 
     def home_screen(self):
         home_widget = QWidget()
         layout = QVBoxLayout()
 
+        # Caminhos das imagens
+        insert_image_path = 'escrevendo_receita.jpg'  # Atualize com o caminho correto
+        query_image_path = 'consultar.jpg'    # Atualize com o caminho correto
+
+        # Configuração da imagem e botão de inserção
+        insert_image_label = QLabel()
+        insert_image_pixmap = QPixmap(insert_image_path)
+        insert_image_label.setPixmap(insert_image_pixmap.scaled(300, 300, Qt.KeepAspectRatio))
+        insert_image_label.setAlignment(Qt.AlignCenter)  # Centraliza apenas a imagem
         insert_button = QPushButton("Inserir Receita")
         insert_button.clicked.connect(lambda: self.stacked_widget.setCurrentIndex(1))
+
+        # Configuração da imagem e botão de consulta
+        query_image_label = QLabel()
+        query_image_pixmap = QPixmap(query_image_path)
+        query_image_label.setPixmap(query_image_pixmap.scaled(300, 300, Qt.KeepAspectRatio))
+        query_image_label.setAlignment(Qt.AlignCenter)  # Centraliza apenas a imagem
         query_button = QPushButton("Consultar Receita")
         query_button.clicked.connect(lambda: self.stacked_widget.setCurrentIndex(4))
 
+        # Adicionando ao layout principal
+        layout.addWidget(insert_image_label)
         layout.addWidget(insert_button)
+        layout.addWidget(query_image_label)
         layout.addWidget(query_button)
-        home_widget.setLayout(layout)
+        advanced_options_button = QPushButton("Opções Avançadas")
+        advanced_options_button.clicked.connect(lambda: self.stacked_widget.setCurrentIndex(5))  # Índice 5 para opções avançadas
+        layout.addWidget(advanced_options_button)
 
+        home_widget.setLayout(layout)
         self.stacked_widget.addWidget(home_widget)
+    
+    def advanced_options_screen(self):
+        advanced_widget = QWidget()
+        layout = QVBoxLayout()
+
+        # Imagem e botão para Editar Receita
+        edit_image_path = 'editar.jpg'  # Atualize com o caminho correto
+        edit_image_label = QLabel()
+        edit_image_pixmap = QPixmap(edit_image_path)
+        edit_image_label.setPixmap(edit_image_pixmap.scaled(300, 300, Qt.KeepAspectRatio))
+        edit_image_label.setAlignment(Qt.AlignCenter)
+        edit_button = QPushButton("Editar Receita")
+        edit_button.clicked.connect(self.edit_recipe)  # Função para editar receitas
+
+        # Imagem e botão para Excluir Receita
+        delete_image_path = 'excluir.jpg'  # Atualize com o caminho correto
+        delete_image_label = QLabel()
+        delete_image_pixmap = QPixmap(delete_image_path)
+        delete_image_label.setPixmap(delete_image_pixmap.scaled(300, 300, Qt.KeepAspectRatio))
+        delete_image_label.setAlignment(Qt.AlignCenter)
+        delete_button = QPushButton("Excluir Receita")
+        delete_button.clicked.connect(self.delete_recipe)  # Função para excluir receitas
+
+        # Adicionando elementos ao layout
+        layout.addWidget(edit_image_label)
+        layout.addWidget(edit_button)
+        layout.addWidget(delete_image_label)
+        layout.addWidget(delete_button)
+        self.add_back_button(layout)  # Botão para voltar ao menu principal
+
+        advanced_widget.setLayout(layout)
+        self.stacked_widget.addWidget(advanced_widget) 
+
+    def edit_recipe(self):
+        dialog = QDialog(self)  # Passar 'self' centraliza em relação à janela principal
+        dialog.setWindowTitle("Editar Receita")  # Nome para a caixa de diálogo
+        layout = QVBoxLayout()
+        search_edit = QLineEdit()
+        search_edit.setPlaceholderText("Digite o nome da receita para filtrar...")
+        recipe_list = QComboBox()
+        search_edit.textChanged.connect(lambda: self.filter_recipes(recipe_list, search_edit.text()))
+
+        layout.addWidget(QLabel("Filtrar Receita:"))
+        layout.addWidget(search_edit)
+        layout.addWidget(QLabel("Selecione a receita para editar:"))
+        layout.addWidget(recipe_list)
+
+        button_edit = QPushButton("Editar")
+        button_edit.clicked.connect(lambda: self.show_edit_recipe_form(recipe_list.currentData()))
+        layout.addWidget(button_edit)
+
+        dialog.setLayout(layout)
+        dialog.exec_()
+
+    def filter_recipes(self, combo_box, text):
+        combo_box.clear()
+        recipes = db.receitas.find({'nome_popular': {'$regex': text, '$options': 'i'}})
+        for recipe in recipes:
+            combo_box.addItem(recipe['nome_popular'], recipe)
+
+    def show_edit_recipe_form(self, recipe):
+        # Formulário de edição
+        if recipe is None:
+            return
+        edit_dialog = QDialog()
+        layout = QVBoxLayout()
+
+        nome_edit = QLineEdit(recipe['nome_popular'])
+        tempo_preparo_spin = QSpinBox()
+        tempo_preparo_spin.setValue(recipe['tempo_preparo'])
+
+        # Adicionar mais campos conforme necessário
+
+        layout.addWidget(QLabel("Nome:"))
+        layout.addWidget(nome_edit)
+        layout.addWidget(QLabel("Tempo de Preparo (minutos):"))
+        layout.addWidget(tempo_preparo_spin)
+
+        save_button = QPushButton("Salvar Alterações")
+        save_button.clicked.connect(lambda: self.update_recipe(recipe['_id'], nome_edit.text(), tempo_preparo_spin.value()))
+        layout.addWidget(save_button)
+
+        edit_dialog.setLayout(layout)
+        edit_dialog.exec_()
+
+    def update_recipe(self, recipe_id, nome, tempo_preparo):
+        # Atualizar a receita no banco de dados
+        db.receitas.update_one({'_id': recipe_id}, {'$set': {'nome_popular': nome, 'tempo_preparo': tempo_preparo}})
+        QMessageBox.information(self, "Atualizado", "Receita atualizada com sucesso!")
+
+    def delete_recipe(self):
+        dialog = QDialog(self)
+        dialog.setWindowTitle("Excluir Receita")
+        layout = QVBoxLayout()
+
+        # Campo para buscar e filtrar receitas
+        search_edit = QLineEdit()
+        search_edit.setPlaceholderText("Digite o nome da receita para filtrar...")
+        recipe_list = QComboBox()
+        search_edit.textChanged.connect(lambda: self.filter_recipes(recipe_list, search_edit.text()))
+
+        # Preencher lista de receitas inicialmente
+        self.populate_recipe_list(recipe_list)
+
+        layout.addWidget(QLabel("Filtrar Receita:"))
+        layout.addWidget(search_edit)
+        layout.addWidget(QLabel("Selecione a receita para excluir:"))
+        layout.addWidget(recipe_list)
+
+        button_delete = QPushButton("Excluir")
+        button_delete.clicked.connect(lambda: self.confirm_deletion(recipe_list.currentData()))
+        layout.addWidget(button_delete)
+
+        dialog.setLayout(layout)
+        dialog.exec_()
+
+    def populate_recipe_list(self, combo_box):
+        combo_box.clear()
+        recipes = db.receitas.find()
+        for recipe in recipes:
+            combo_box.addItem(recipe['nome_popular'], recipe)
+
+    def filter_recipes(self, combo_box, text):
+        combo_box.clear()
+        recipes = db.receitas.find({'nome_popular': {'$regex': text, '$options': 'i'}})
+        for recipe in recipes:
+            combo_box.addItem(recipe['nome_popular'], recipe)
+
+    def confirm_deletion(self, recipe):
+        if recipe is None:
+            return
+        # Configurando a caixa de diálogo de confirmação com botões em português
+        message_box = QMessageBox(self)
+        message_box.setWindowTitle('Confirmar Exclusão')
+        message_box.setText('Você tem certeza que deseja excluir esta receita?')
+        message_box.setIcon(QMessageBox.Question)
+        message_box.addButton('Sim', QMessageBox.YesRole)  # Definindo botão "Sim"
+        message_box.addButton('Não', QMessageBox.NoRole)   # Definindo botão "Não"
+        reply = message_box.exec_()  # Executando a caixa de diálogo
+
+        if reply == 0:  # O índice 0 corresponde ao botão "Sim" porque foi adicionado primeiro
+            db.receitas.delete_one({'_id': recipe['_id']})
+            QMessageBox.information(self, "Excluído", "Receita excluída com sucesso!", QMessageBox.Ok)
+
+    
+        
 
     def insert_screen_step1(self):
         insert_step1_widget = QWidget()
@@ -71,6 +244,7 @@ class MainWindow(QMainWindow):
         insert_step1_widget.setLayout(layout)
 
         self.stacked_widget.addWidget(insert_step1_widget)
+        self.add_back_button(layout)
 
     def insert_screen_step2(self):
         insert_step2_widget = QWidget()
@@ -98,6 +272,7 @@ class MainWindow(QMainWindow):
         insert_step2_widget.setLayout(layout)
 
         self.stacked_widget.addWidget(insert_step2_widget)
+        self.add_back_button(layout, 1)
 
     def add_ingrediente_field(self):
         ingrediente_widget = QWidget()
@@ -119,27 +294,43 @@ class MainWindow(QMainWindow):
         insert_step3_widget = QWidget()
         layout = QVBoxLayout()
 
-        self.modo_preparo_edit = QLineEdit()
-        self.imagem_path = ""
-        self.bandeira_path = ""
+        # Configuração da imagem ilustrativa
+        cooking_image_path = 'modo_preparo.jpg'  # Atualize com o caminho correto
+        cooking_image_label = QLabel()
+        cooking_image_pixmap = QPixmap(cooking_image_path)
+        cooking_image_label.setPixmap(cooking_image_pixmap.scaled(600, 400, Qt.KeepAspectRatio))
+        cooking_image_label.setAlignment(Qt.AlignCenter)
 
+        # Configuração da caixa de texto grande para o modo de preparo
+        self.modo_preparo_edit = QTextEdit()
+        self.modo_preparo_edit.setPlaceholderText("Digite o modo de preparo aqui...")
+        self.modo_preparo_edit.setFont(QFont("Arial", 12))
+        self.modo_preparo_edit.setMinimumHeight(200)  # Altura mínima para a caixa de texto
+
+        # Botões de seleção de imagem e bandeira
         select_image_button = QPushButton("Selecionar Imagem da Receita")
         select_image_button.clicked.connect(self.select_image)
 
         select_bandeira_button = QPushButton("Selecionar Imagem da Bandeira")
         select_bandeira_button.clicked.connect(self.select_bandeira)
 
+        submit_button = QPushButton("Salvar Receita")
+        submit_button.clicked.connect(self.save_recipe)
+
+        # Adicionando todos os componentes ao layout
+        layout.addWidget(cooking_image_label)
         layout.addWidget(QLabel("Modo de Preparo:"))
         layout.addWidget(self.modo_preparo_edit)
         layout.addWidget(select_image_button)
         layout.addWidget(select_bandeira_button)
-
-        submit_button = QPushButton("Salvar Receita")
-        submit_button.clicked.connect(self.save_recipe)
         layout.addWidget(submit_button)
-        insert_step3_widget.setLayout(layout)
 
+        # Ajustando o layout para expandir a caixa de texto horizontalmente
+        layout.setStretchFactor(self.modo_preparo_edit, 1)
+
+        insert_step3_widget.setLayout(layout)
         self.stacked_widget.addWidget(insert_step3_widget)
+        self.add_back_button(layout, 2)
 
     def select_image(self):
         options = QFileDialog.Options()
@@ -230,6 +421,8 @@ class MainWindow(QMainWindow):
 
         query_widget.setLayout(layout)
         self.stacked_widget.addWidget(query_widget)
+        self.query_result_list.itemClicked.connect(self.display_recipe_details)
+        self.add_back_button(layout)
 
     def populate_country_combobox(self, combobox, include_empty=False):
         countries = [
@@ -261,6 +454,7 @@ class MainWindow(QMainWindow):
         for result in results:
             item = QListWidgetItem(result["nome_popular"])
             self.query_result_list.addItem(item)
+            
 
     def display_recipe_details(self, item):
         recipe_name = item.text()
@@ -331,3 +525,4 @@ class MainWindow(QMainWindow):
 
             self.stacked_widget.addWidget(details_widget)
             self.stacked_widget.setCurrentWidget(details_widget)
+            self.add_back_button(main_layout, 4)
