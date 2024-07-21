@@ -11,7 +11,7 @@ Edição e Exclusão: Receitas podem ser facilmente editadas ou excluídas.
 
 **Busca Avançada**: Funcionalidade de busca permite aos usuários encontrar receitas por várias categorias ou diretamente por termos específicos. 
 
-**Tecnologias Utilizadas**
+**Tecnologias Utilizadas**:
 
 Python: Linguagem principal para o desenvolvimento do backend.
 PyQt5: Usado para criar a interface gráfica do usuário (GUI).
