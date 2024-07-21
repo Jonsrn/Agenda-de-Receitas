@@ -17,7 +17,8 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("Aplicação de Receitas")
         self.setGeometry(100, 100, 1200, 800)
         
-
+        
+        self.imagem_path = None
         self.stacked_widget = QStackedWidget()
         self.setCentralWidget(self.stacked_widget)
         
@@ -378,7 +379,7 @@ class MainWindow(QMainWindow):
                 ingredientes.append({"nome": nome, "quantidade": quantidade, "unidade": unidade})
 
         imagem_id = None
-        if self.imagem_path:
+        if self.imagem_path:  # Checagem se um caminho de imagem foi fornecido
             with open(self.imagem_path, "rb") as image_file:
                 imagem_id = fs.put(image_file, filename=self.imagem_path.split('/')[-1])
 
