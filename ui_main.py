@@ -13,7 +13,7 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Aplicação de Receitas")
-        self.setGeometry(100, 100, 800, 600)
+        self.setGeometry(100, 100, 1200, 800)
 
         self.stacked_widget = QStackedWidget()
         self.setCentralWidget(self.stacked_widget)
@@ -268,49 +268,66 @@ class MainWindow(QMainWindow):
 
         if recipe:
             details_widget = QWidget()
-            layout = QVBoxLayout(details_widget)
+            main_layout = QVBoxLayout(details_widget)
+            top_layout = QHBoxLayout()
+            bottom_layout = QGridLayout()
 
+            # Image
             image_label = QLabel()
             if recipe.get("imagem_id"):
                 pixmap = QPixmap()
                 pixmap.loadFromData(fs.get(recipe["imagem_id"]).read())
-                image_label.setPixmap(pixmap.scaled(200, 200, Qt.KeepAspectRatio))
+                image_label.setPixmap(pixmap.scaled(400, 400, Qt.KeepAspectRatio))
             else:
                 image_label.setText("Imagem não Disponível")
                 image_label.setAlignment(Qt.AlignCenter)
                 image_label.setStyleSheet("background-color: gray; font-size: 16px;")
+                image_label.setFixedSize(400, 400)
 
+            # Title
             title_label = QLabel(recipe["nome_popular"])
-            title_label.setFont(QFont("Arial", 18, QFont.Bold))
+            title_label.setFont(QFont("Georgia", 24, QFont.Bold))
+            title_label.setAlignment(Qt.AlignCenter)
 
-            info_layout = QHBoxLayout()
+            # Flag
+            flag_label = QLabel()
+            if recipe.get("bandeira_origem_id"):
+                flag_pixmap = QPixmap()
+                flag_pixmap.loadFromData(fs.get(recipe["bandeira_origem_id"]).read())
+                flag_label.setPixmap(flag_pixmap.scaled(50, 50, Qt.KeepAspectRatio))
+            else:
+                flag_label.setText("Bandeira não disponível")
+                flag_label.setAlignment(Qt.AlignRight)
+                flag_label.setStyleSheet("font-size: 12px;")
 
-            # Left column for ingredients and time
-            left_column = QVBoxLayout()
+            top_layout.addWidget(image_label)
+            top_layout.addSpacing(20)
+            top_layout.addWidget(title_label)
+            top_layout.addWidget(flag_label)
+            top_layout.setAlignment(flag_label, Qt.AlignTop | Qt.AlignRight)
+
+            # Ingredients and Preparation
             ingredients_label = QLabel("Ingredientes:")
-            ingredients_text = "\n".join([f"{ing['quantidade']} {ing['unidade']} de {ing['nome']}" for ing in recipe["ingredientes"]])
-            ingredients_info = QLabel(ingredients_text)
-            ingredients_info.setWordWrap(True)
+            ingredients_label.setFont(QFont("Arial", 18))
+            ingredients_text = QLabel("\n".join([f"{ing['quantidade']} {ing['unidade']} de {ing['nome']}" for ing in recipe["ingredientes"]]))
+            ingredients_text.setFont(QFont("Arial", 14))
+            ingredients_text.setWordWrap(True)
 
-            left_column.addWidget(ingredients_label)
-            left_column.addWidget(ingredients_info)
-            left_column.addWidget(QLabel(f"Tempo de Preparo: {recipe['tempo_preparo']} minutos"))
-
-            # Right column for preparation steps
-            right_column = QVBoxLayout()
             preparation_label = QLabel("Modo de Preparo:")
+            preparation_label.setFont(QFont("Arial", 18))
             preparation_text = QLabel(recipe["modo_preparo"])
+            preparation_text.setFont(QFont("Arial", 14))
             preparation_text.setWordWrap(True)
 
-            right_column.addWidget(preparation_label)
-            right_column.addWidget(preparation_text)
+            # Grid layout for text alignment
+            bottom_layout.addWidget(ingredients_label, 0, 0)
+            bottom_layout.addWidget(ingredients_text, 1, 0)
+            bottom_layout.addWidget(preparation_label, 0, 1)
+            bottom_layout.addWidget(preparation_text, 1, 1)
+            bottom_layout.setColumnStretch(1, 2)
 
-            info_layout.addLayout(left_column)
-            info_layout.addLayout(right_column)
-
-            layout.addWidget(image_label)
-            layout.addWidget(title_label)
-            layout.addLayout(info_layout)
+            main_layout.addLayout(top_layout)
+            main_layout.addLayout(bottom_layout)
 
             self.stacked_widget.addWidget(details_widget)
             self.stacked_widget.setCurrentWidget(details_widget)
