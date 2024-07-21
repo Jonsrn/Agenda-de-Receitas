@@ -496,26 +496,13 @@ class MainWindow(QMainWindow):
         if recipe:
             details_widget = QWidget()
             main_layout = QVBoxLayout(details_widget)
-            top_layout = QHBoxLayout()
-            bottom_layout = QVBoxLayout()  # Usando um layout vertical para simplificar
 
-            # Configuração da imagem
-            image_label = QLabel("Imagem não Disponível")
-            image_label.setAlignment(Qt.AlignCenter)
-            image_label.setStyleSheet("background-color: gray; font-size: 16px;")
-            image_label.setFixedSize(400, 400)
-            if recipe.get("imagem_id"):
-                try:
-                    pixmap = QPixmap()
-                    pixmap.loadFromData(fs.get(recipe["imagem_id"]).read())
-                    image_label.setPixmap(pixmap.scaled(400, 400, Qt.KeepAspectRatio))
-                except gridfs.errors.NoFile:
-                    QMessageBox.warning(self, "Erro", "Imagem da receita não encontrada no banco de dados.")
-
-            # Configuração do título
+            # Configuração do título e imagem
+            title_layout = QHBoxLayout()
             title_label = QLabel(recipe["nome_popular"])
-            title_label.setFont(QFont("Georgia", 24, QFont.Bold))
+            title_label.setFont(QFont("Georgia", 28, QFont.Bold))
             title_label.setAlignment(Qt.AlignCenter)
+            title_label.setStyleSheet("color: white;")
 
             # Caminho base para as bandeiras
             base_path = os.path.join(os.path.dirname(__file__), 'bandeiras')
@@ -534,41 +521,84 @@ class MainWindow(QMainWindow):
             bandeira_filename = country_codes_to_filenames.get(recipe.get("origem_code"), os.path.join(base_path, "default_flag.png"))
             flag_pixmap = QPixmap(bandeira_filename)
 
-            # Configuração da bandeira
             flag_label = QLabel()
             flag_label.setPixmap(flag_pixmap.scaled(50, 50, Qt.KeepAspectRatio))
             flag_label.setAlignment(Qt.AlignRight)
-            flag_label.setStyleSheet("font-size: 12px;")
 
-            top_layout.addWidget(image_label)
-            top_layout.addSpacing(20)
-            top_layout.addWidget(title_label)
-            top_layout.addWidget(flag_label)
-            top_layout.setAlignment(flag_label, Qt.AlignTop | Qt.AlignRight)
+            image_label = QLabel("Imagem não Disponível")
+            image_label.setAlignment(Qt.AlignCenter)
+            image_label.setFixedSize(300, 300)
+            if recipe.get("imagem_id"):
+                try:
+                    pixmap = QPixmap()
+                    pixmap.loadFromData(fs.get(recipe["imagem_id"]).read())
+                    image_label.setPixmap(pixmap.scaled(300, 300, Qt.KeepAspectRatio))
+                except gridfs.errors.NoFile:
+                    QMessageBox.warning(self, "Erro", "Imagem da receita não encontrada no banco de dados.")
+            
+            title_layout.addWidget(image_label)
+            title_layout.addWidget(title_label)
+            title_layout.addWidget(flag_label)
+            main_layout.addLayout(title_layout)
 
-            # Configuração dos ingredientes e modo de preparo
-            ingredients_label = QLabel("Ingredientes:")
-            ingredients_label.setFont(QFont("Arial", 18))
+            # Adicionar tempo de preparo
+            if "tempo_preparo" in recipe:
+                tempo_preparo = recipe["tempo_preparo"]
+                if tempo_preparo >= 60:
+                    horas = tempo_preparo // 60
+                    minutos = tempo_preparo % 60
+                    tempo_preparo_str = f"{horas} horas"
+                    if minutos > 0:
+                        tempo_preparo_str += f" e {minutos} minutos"
+                else:
+                    tempo_preparo_str = f"{tempo_preparo} minutos"
+
+                time_layout = QHBoxLayout()
+                time_label = QLabel(f"Tempo de Preparo: {tempo_preparo_str}")
+                time_label.setFont(QFont("Arial", 18))
+                time_label.setAlignment(Qt.AlignCenter)
+                time_label.setStyleSheet("color: #FFA500;")  # Cor laranja para destaque
+                time_layout.addWidget(time_label)
+                main_layout.addLayout(time_layout)
+
+            # Configuração dos ingredientes
+            ingredients_section = QWidget()
+            ingredients_layout = QVBoxLayout(ingredients_section)
+            ingredients_section.setStyleSheet("background-color: #333333; padding: 20px; border-radius: 10px;")
+            ingredients_label = QLabel("Ingredientes")
+            ingredients_label.setFont(QFont("Arial", 22, QFont.Bold))
+            ingredients_label.setAlignment(Qt.AlignCenter)
+            ingredients_label.setStyleSheet("color: #FFA500;")  # Cor laranja para contraste
             ingredients_text = QLabel("\n".join([f"{ing['quantidade']} {ing['unidade']} de {ing['nome']}" for ing in recipe["ingredientes"]]))
             ingredients_text.setFont(QFont("Arial", 14))
             ingredients_text.setWordWrap(True)
+            ingredients_text.setStyleSheet("color: white;")
+            ingredients_layout.addWidget(ingredients_label)
+            ingredients_layout.addWidget(ingredients_text)
+            main_layout.addWidget(ingredients_section)
 
-            preparation_label = QLabel("Modo de Preparo:")
-            preparation_label.setFont(QFont("Arial", 18))
+            # Configuração do modo de preparo
+            preparation_section = QWidget()
+            preparation_layout = QVBoxLayout(preparation_section)
+            preparation_section.setStyleSheet("background-color: #444444; padding: 20px; border-radius: 10px;")
+            preparation_label = QLabel("Modo de Preparo")
+            preparation_label.setFont(QFont("Arial", 22, QFont.Bold))
+            preparation_label.setAlignment(Qt.AlignCenter)
+            preparation_label.setStyleSheet("color: #FFA500;")  # Cor laranja para contraste
             preparation_text = QLabel(recipe["modo_preparo"])
             preparation_text.setFont(QFont("Arial", 14))
             preparation_text.setWordWrap(True)
-
-            bottom_layout.addWidget(ingredients_label)
-            bottom_layout.addWidget(ingredients_text)
-            bottom_layout.addWidget(preparation_label)
-            bottom_layout.addWidget(preparation_text)
-
-            main_layout.addLayout(top_layout)
-            main_layout.addLayout(bottom_layout)
+            preparation_text.setStyleSheet("color: white;")
+            preparation_layout.addWidget(preparation_label)
+            preparation_layout.addWidget(preparation_text)
+            main_layout.addWidget(preparation_section)
 
             details_widget.setLayout(main_layout)
             self.stacked_widget.addWidget(details_widget)
             self.stacked_widget.setCurrentWidget(details_widget)
             self.add_back_button(main_layout, 4)  # Adicionando um botão de volta
+
+
+
+
 
