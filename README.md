@@ -22,6 +22,9 @@ Configuração e Execução
 Para executar este aplicativo, siga os passos abaixo:
 
 **Pré-requisitos**
+
 Python 3.x instalado
+
 PyQt5 instalado via pip
+
 MongoDB instalado e rodando localmente ou remotamente
