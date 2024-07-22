@@ -221,7 +221,19 @@ class MainWindow(QMainWindow):
             db.receitas.delete_one({'_id': recipe['_id']})
             QMessageBox.information(self, "Excluído", "Receita excluída com sucesso!", QMessageBox.Ok)
 
-    
+    def get_country_code(self, country_name):
+        country_codes = {
+            "Brasil": 1,
+            "Estados Unidos": 2,
+            "França": 3,
+            "Alemanha": 4,
+            "Itália": 5,
+            "Japão": 6,
+            "México": 7,
+            "Espanha": 8,
+            "Reino Unido": 9
+        }
+        return country_codes.get(country_name, 0)
         
 
     def insert_screen_step1(self):
@@ -480,7 +492,7 @@ class MainWindow(QMainWindow):
         if tipo_prato:
             query["tipo_prato"] = tipo_prato
         if origem:
-            query["origem"] = origem
+            query["origem_code"] = self.get_country_code(origem)
 
         results = db.receitas.find(query)
         self.query_result_list.clear()
